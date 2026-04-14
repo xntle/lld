@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "WebSearch",
+      "WebFetch(domain:water-simulation.vercel.app)",
+      "WebFetch(domain:80.lv)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:blog.maximeheckel.com)"
+    ]
+  }
+}
