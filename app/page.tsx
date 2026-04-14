@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import gsap from "gsap";
 import LiquidCursor from "./cursor";
 import WaterCanvas from "./water";
 
@@ -10,29 +12,69 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const observers = sectionRefs.current.map((el, i) => {
-      if (!el) return null;
-      const obs = new IntersectionObserver(
-        ([e]) => {
-          if (e.isIntersecting) setActive(i);
-        },
-        { root: container, threshold: 0.5 }
-      );
-      obs.observe(el);
-      return obs;
-    });
-    return () => observers.forEach((o) => o?.disconnect());
-  }, []);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const currentIdx = useRef(0);
+  const animating = useRef(false);
 
   const goTo = (i: number) => {
     const el = sectionRefs.current[i];
     const c = containerRef.current;
-    if (el && c) c.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+    if (!el || !c) return;
+    animating.current = true;
+    currentIdx.current = i;
+    setActive(i);
+    gsap.to(c, {
+      scrollTop: el.offsetTop,
+      duration: 0.85,
+      ease: "power2.inOut",
+      onComplete: () => {
+        animating.current = false;
+      },
+    });
   };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (animating.current) return;
+      if (Math.abs(e.deltaY) < 20) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      const next = Math.max(
+        0,
+        Math.min(sectionRefs.current.length - 1, currentIdx.current + dir)
+      );
+      if (next === currentIdx.current) return;
+      goTo(next);
+    };
+
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const diff = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) < 50 || animating.current) return;
+      const dir = diff > 0 ? 1 : -1;
+      const next = Math.max(
+        0,
+        Math.min(sectionRefs.current.length - 1, currentIdx.current + dir)
+      );
+      if (next !== currentIdx.current) goTo(next);
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      container.removeEventListener("wheel", onWheel);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchend", onTouchEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ref = (i: number) => (el: HTMLElement | null) => {
     sectionRefs.current[i] = el;
@@ -42,7 +84,7 @@ export default function Home() {
     <>
       {/* NAV */}
       <nav
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-all duration-500"
+        className="nav-pad fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-all duration-500"
         style={{
           padding: "28px 56px",
           background:
@@ -56,7 +98,9 @@ export default function Home() {
         >
           LLD
         </button>
-        <ul className="flex items-center gap-12">
+
+        {/* Desktop nav */}
+        <ul className="nav-links flex items-center gap-12">
           {NAV.map((label, i) => (
             <li key={label}>
               <button
@@ -74,10 +118,73 @@ export default function Home() {
             </li>
           ))}
         </ul>
+
+        {/* Mobile hamburger */}
+        <button
+          className="mobile-menu-btn flex flex-col justify-center gap-[5px]"
+          onClick={() => setMenuOpen((o) => !o)}
+          style={{ width: 24, padding: 0, background: "none", border: "none" }}
+        >
+          <span
+            style={{
+              display: "block",
+              width: menuOpen ? "100%" : "100%",
+              height: 1,
+              background: "white",
+              transition: "transform 0.3s, opacity 0.3s",
+              transform: menuOpen ? "translateY(6px) rotate(45deg)" : "none",
+            }}
+          />
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: 1,
+              background: "white",
+              transition: "opacity 0.3s",
+              opacity: menuOpen ? 0 : 1,
+            }}
+          />
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: 1,
+              background: "white",
+              transition: "transform 0.3s, opacity 0.3s",
+              transform: menuOpen ? "translateY(-6px) rotate(-45deg)" : "none",
+            }}
+          />
+        </button>
       </nav>
 
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div
+          className="mobile-menu-overlay fixed inset-0 z-40 flex flex-col items-center justify-center gap-10"
+          style={{
+            background: "rgba(4,4,4,0.96)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          {NAV.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                goTo(i + 1);
+                setMenuOpen(false);
+              }}
+              className="text-white uppercase font-light tracking-[0.4em] text-xl transition-opacity duration-200"
+              style={{ opacity: active === i + 1 ? 1 : 0.45 }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* SIDE DOTS */}
-      <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-[10px]">
+      <div className="side-dots fixed right-8 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-[10px]">
         {[...Array(5)].map((_, i) => (
           <button
             key={i}
@@ -100,7 +207,6 @@ export default function Home() {
         style={{
           height: "100vh",
           overflowY: "scroll",
-          scrollSnapType: "y mandatory",
         }}
       >
         {/* ─── HERO ─── */}
@@ -116,8 +222,7 @@ export default function Home() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src="/photos/background.mov" type="video/quicktime" />
-            <source src="/photos/background.mov" type="video/mp4" />
+            <source src="/videos/background.mp4" type="video/mp4" />
           </video>
 
           <div className="relative z-10 flex flex-col items-center text-center">
@@ -125,11 +230,11 @@ export default function Home() {
               Thiết Kế & Thi Công
             </p>
             <div
-              className="border border-white/20 flex flex-col items-center"
+              className="hero-box border border-white/20 flex flex-col items-center"
               style={{ padding: "52px 88px", backdropFilter: "blur(6px)" }}
             >
               <h1
-                className="text-white font-thin uppercase"
+                className="hero-title text-white font-thin uppercase"
                 style={{
                   fontSize: "5rem",
                   letterSpacing: "0.6em",
@@ -173,10 +278,13 @@ export default function Home() {
           className="h-screen w-full flex items-center justify-center"
           style={{ scrollSnapAlign: "start", background: "#0b0b0b" }}
         >
-          <div style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}>
+          <div
+            className="section-inner"
+            style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
+          >
             <Label>Dịch Vụ</Label>
             <h2
-              className="text-white font-light text-center"
+              className="section-title text-white font-light text-center"
               style={{
                 fontSize: "2.6rem",
                 letterSpacing: "0.02em",
@@ -187,6 +295,7 @@ export default function Home() {
             </h2>
 
             <div
+              className="services-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr 1fr",
@@ -256,69 +365,26 @@ export default function Home() {
         <section
           ref={ref(2)}
           id="du-an"
-          className="h-screen w-full flex items-center justify-center"
+          className="h-screen w-full flex flex-col justify-center overflow-hidden"
           style={{ scrollSnapAlign: "start", background: "#080808" }}
         >
-          <div style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}>
+          <div
+            className="portfolio-header"
+            style={{ padding: "0 56px", marginBottom: 40 }}
+          >
             <Label>Dự Án</Label>
             <h2
-              className="text-white font-light text-center"
+              className="section-title text-white font-light text-center"
               style={{
                 fontSize: "2.6rem",
                 letterSpacing: "0.02em",
-                margin: "20px 0 56px",
+                margin: "20px 0 0",
               }}
             >
               Công Trình Tiêu Biểu
             </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 2,
-              }}
-            >
-              {[
-                { name: "Biệt Thự Nghỉ Dưỡng", loc: "Đà Nẵng" },
-                { name: "Khu Resort 5 Sao", loc: "Phú Quốc" },
-                { name: "Penthouse Cao Cấp", loc: "TP. Hồ Chí Minh" },
-                { name: "Villa Sân Vườn", loc: "Hội An" },
-              ].map((p) => (
-                <div
-                  key={p.name}
-                  className="relative overflow-hidden cursor-pointer group"
-                  style={{
-                    aspectRatio: "16/9",
-                    background: "rgba(255,255,255,0.04)",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{ background: "rgba(0,0,0,0.55)" }}
-                  >
-                    <p className="text-white font-light text-sm tracking-widest uppercase">
-                      {p.name}
-                    </p>
-                    <p
-                      className="text-xs tracking-widest uppercase mt-2"
-                      style={{ color: "rgba(255,255,255,0.4)" }}
-                    >
-                      {p.loc}
-                    </p>
-                  </div>
-                  <div className="absolute bottom-4 left-5 group-hover:opacity-0 transition-opacity duration-300">
-                    <p
-                      className="text-xs tracking-widest uppercase"
-                      style={{ color: "rgba(255,255,255,0.4)" }}
-                    >
-                      {p.name}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
+          <Portfolio />
         </section>
 
         {/* ─── PROCESS ─── */}
@@ -328,10 +394,13 @@ export default function Home() {
           className="h-screen w-full flex items-center justify-center"
           style={{ scrollSnapAlign: "start", background: "#0b0b0b" }}
         >
-          <div style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}>
+          <div
+            className="section-inner"
+            style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
+          >
             <Label>Quy Trình</Label>
             <h2
-              className="text-white font-light text-center"
+              className="section-title text-white font-light text-center"
               style={{
                 fontSize: "2.6rem",
                 letterSpacing: "0.02em",
@@ -342,38 +411,44 @@ export default function Home() {
             </h2>
 
             <div
+              className="process-grid"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 40,
+                gridTemplateColumns: "repeat(5, 1fr)",
+                gap: 32,
               }}
             >
               {[
                 {
                   n: "01",
-                  t: "Tư Vấn",
-                  d: "Lắng nghe và phân tích nhu cầu cụ thể của từng khách hàng.",
+                  t: "Giới Thiệu",
+                  d: "Hơn 26 năm kinh nghiệm tư vấn, thiết kế và thi công hồ bơi, khu vui chơi nước và spa với thiết bị nhập khẩu từ Tây Ban Nha, Úc, New Zealand và Thụy Điển.",
                 },
                 {
                   n: "02",
-                  t: "Thiết Kế",
-                  d: "Phác thảo ý tưởng và hoàn thiện bản vẽ kỹ thuật chi tiết.",
+                  t: "Khảo Sát",
+                  d: "Đội ngũ kỹ thuật khảo sát thực địa, lập báo cáo chi tiết và đề xuất giải pháp tối ưu phù hợp với điều kiện thực tế của công trình.",
                 },
                 {
                   n: "03",
-                  t: "Thi Công",
-                  d: "Triển khai xây dựng theo đúng tiêu chuẩn và tiến độ cam kết.",
+                  t: "Thiết Kế",
+                  d: "Lựa chọn vật liệu từ bộ sưu tập đa dạng, tự do điều chỉnh kích thước và hình dạng để tạo nên hồ bơi độc đáo theo phong cách riêng.",
                 },
                 {
                   n: "04",
+                  t: "Thi Công",
+                  d: "Lập kế hoạch và dự toán chi tiết từng hạng mục. Đội thi công chuyên nghiệp đảm bảo tiêu chuẩn kỹ thuật, an toàn và tiến độ cam kết.",
+                },
+                {
+                  n: "05",
                   t: "Bàn Giao",
-                  d: "Kiểm tra chất lượng và bàn giao công trình hoàn chỉnh.",
+                  d: "Kiểm tra toàn diện trước bàn giao, hướng dẫn vận hành và bảo trì. Chính sách bảo hành rõ ràng và hỗ trợ lâu dài sau khi sử dụng.",
                 },
               ].map((p, idx) => (
                 <div
                   key={p.n}
                   className="flex flex-col"
-                  style={{ paddingTop: idx % 2 === 1 ? 32 : 0 }}
+                  style={{ paddingTop: idx % 2 === 1 ? 40 : 0 }}
                 >
                   <span
                     className="font-thin"
@@ -432,10 +507,11 @@ export default function Home() {
           <WaterCanvas />
 
           <div
-            className="relative z-10"
+            className="contact-outer relative z-10"
             style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
           >
             <div
+              className="contact-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1.4fr",
@@ -452,6 +528,7 @@ export default function Home() {
                 <Label left>Liên Hệ</Label>
                 <h2
                   className="text-white font-light"
+                  className="contact-title"
                   style={{
                     fontSize: "2.8rem",
                     letterSpacing: "0.01em",
@@ -472,26 +549,128 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col gap-5">
                   {[
-                    { label: "Email", value: "info@linhlinhdan.com" },
-                    { label: "Điện Thoại", value: "+84 919992424" },
+                    {
+                      label: "Email",
+                      value: "info@linhlinhdan.com",
+                      href: "mailto:info@linhlinhdan.com",
+                      tip: "Gửi email",
+                      icon: (
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="2" y="4" width="20" height="16" rx="2" />
+                          <polyline points="2,4 12,13 22,4" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      label: "Điện Thoại",
+                      value: "+84 919 992 424",
+                      href: "tel:+84919992424",
+                      tip: "Gọi ngay",
+                      icon: (
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                      ),
+                    },
                     {
                       label: "Địa Chỉ",
                       value: "49L Quốc Hương, Thảo Điền, An Khánh, Hồ Chí Minh",
+                      href: "https://maps.app.goo.gl/fkEcdE9EKqoS3T5Q9",
+                      tip: "Xem bản đồ",
+                      icon: (
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                          <circle cx="12" cy="9" r="2.5" />
+                        </svg>
+                      ),
                     },
                   ].map((c) => (
-                    <div key={c.label}>
+                    <div key={c.label} className="relative group/item">
                       <p
                         className="text-[10px] tracking-[0.4em] uppercase mb-1"
                         style={{ color: "rgba(255,255,255,0.45)" }}
                       >
                         {c.label}
                       </p>
-                      <p
-                        className="text-sm font-light"
+                      <a
+                        href={c.href}
+                        target={c.label === "Địa Chỉ" ? "_blank" : undefined}
+                        rel={
+                          c.label === "Địa Chỉ"
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                        className="text-sm font-light transition-colors duration-200"
                         style={{ color: "rgba(255,255,255,0.9)" }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.color = "#60A5FA")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.color =
+                            "rgba(255,255,255,0.9)")
+                        }
                       >
                         {c.value}
-                      </p>
+                      </a>
+                      {/* Bubble tooltip */}
+                      <div
+                        className="pointer-events-none absolute left-0 bottom-full mb-2 opacity-0 group-hover/item:opacity-100 transition-all duration-200 translate-y-1 group-hover/item:translate-y-0"
+                        style={{ whiteSpace: "nowrap", zIndex: 10 }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            background: "white",
+                            color: "#000",
+                            fontSize: "0.65rem",
+                            fontWeight: 500,
+                            letterSpacing: "0.08em",
+                            padding: "5px 10px",
+                            borderRadius: 99,
+                          }}
+                        >
+                          {c.icon}
+                          {c.tip}
+                        </div>
+                        <div
+                          style={{
+                            width: 6,
+                            height: 6,
+                            background: "white",
+                            transform: "rotate(45deg)",
+                            margin: "-3px 14px 0",
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -617,6 +796,166 @@ function UnderlineInput({
   );
 }
 
+const PHOTOS = [
+  {
+    src: "/photos/portfolio/B%E1%BB%91n%20Bi%E1%BB%83n%20resort.jpeg",
+    name: "Bốn Biển Resort",
+  },
+  {
+    src: "/photos/portfolio/L%C3%A0ng%20Chuy%C3%AAn%20Gia%20The%20oasis.jpeg",
+    name: "Làng Chuyên Gia The Oasis",
+  },
+  {
+    src: "/photos/portfolio/L%C3%A0ng%20C%C3%A1%20Voi.jpg",
+    name: "Làng Cá Voi",
+  },
+  { src: "/photos/portfolio/M%E1%BA%AFt%20Xanh.jpeg", name: "Mắt Xanh" },
+  {
+    src: "/photos/portfolio/Ocean%20Dunes%20Resort.jpeg",
+    name: "Ocean Dunes Resort",
+  },
+  { src: "/photos/portfolio/Sunrise%20Village.jpeg", name: "Sunrise Village" },
+  { src: "/photos/portfolio/S%C3%B4ng%20B%C3%A9.jpeg", name: "Sông Bé" },
+  { src: "/photos/portfolio/The%20Anam%201.jpeg", name: "The Anam" },
+  { src: "/photos/portfolio/The%20Anam%202.jpeg", name: "The Anam" },
+  { src: "/photos/portfolio/The%20Anam%203.jpeg", name: "The Anam" },
+  { src: "/photos/portfolio/The%20Anam%204.jpeg", name: "The Anam" },
+  { src: "/photos/portfolio/IMG_0005.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0007.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0012.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0013.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0014.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0016.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0017.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0019.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0021.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0023.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0024.JPG", name: "Công Trình" },
+  { src: "/photos/portfolio/IMG_0025.JPG", name: "Công Trình" },
+];
+
+function Portfolio() {
+  const [current, setCurrent] = useState(0);
+  const total = PHOTOS.length;
+  const prev = () => setCurrent((c) => (c - 1 + total) % total);
+  const next = () => setCurrent((c) => (c + 1) % total);
+
+  // Show 3 cards: prev, active, next
+  const indices = [
+    (current - 1 + total) % total,
+    current,
+    (current + 1) % total,
+  ];
+
+  return (
+    <div
+      className="portfolio-wrap relative w-full"
+      style={{ padding: "0 56px" }}
+    >
+      {/* Cards */}
+      <div
+        className="flex items-center justify-center gap-4"
+        style={{ height: 420 }}
+      >
+        {indices.map((idx, pos) => {
+          const isActive = pos === 1;
+          return (
+            <div
+              key={idx}
+              onClick={() => {
+                if (pos === 0) prev();
+                if (pos === 2) next();
+              }}
+              className={`${
+                isActive ? "portfolio-main" : "portfolio-side"
+              } relative overflow-hidden transition-all duration-500`}
+              style={{
+                flex: isActive ? "0 0 54%" : "0 0 22%",
+                height: isActive ? 400 : 300,
+                opacity: isActive ? 1 : 0.45,
+                cursor: isActive ? "default" : "pointer",
+              }}
+            >
+              <Image
+                src={PHOTOS[idx].src}
+                alt={PHOTOS[idx].name}
+                fill
+                sizes="(max-width: 768px) 100vw, 54vw"
+                className="object-cover"
+                quality={90}
+              />
+              {isActive && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 flex items-end"
+                  style={{
+                    padding: "32px 28px 24px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)",
+                  }}
+                >
+                  <p className="text-white font-light text-sm tracking-widest uppercase">
+                    {PHOTOS[idx].name}
+                  </p>
+                  <p
+                    className="text-xs tracking-widest ml-auto"
+                    style={{ color: "rgba(255,255,255,0.4)" }}
+                  >
+                    {current + 1} / {total}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Arrows */}
+      <button
+        onClick={prev}
+        className="portfolio-arrows absolute left-8 top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-200 hover:opacity-100"
+        style={{
+          width: 40,
+          height: 40,
+          border: "1px solid rgba(255,255,255,0.2)",
+          color: "white",
+          opacity: 0.5,
+        }}
+      >
+        ‹
+      </button>
+      <button
+        onClick={next}
+        className="portfolio-arrows absolute right-8 top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-200 hover:opacity-100"
+        style={{
+          width: 40,
+          height: 40,
+          border: "1px solid rgba(255,255,255,0.2)",
+          color: "white",
+          opacity: 0.5,
+        }}
+      >
+        ›
+      </button>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-2 mt-6">
+        {PHOTOS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            style={{
+              width: i === current ? 20 : 5,
+              height: 5,
+              borderRadius: 99,
+              background: i === current ? "white" : "rgba(255,255,255,0.22)",
+              transition: "all 0.3s ease",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Label({
   children,
