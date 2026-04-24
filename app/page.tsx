@@ -2,16 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import LiquidCursor from "./cursor";
 import WaterCanvas from "./water";
+import PROJECTS, { type Project } from "@/data/projects";
+import GalleryModal from "@/components/gallery-modal";
 
-const NAV = ["Dịch Vụ", "Dự Án", "Quy Trình", "Liên Hệ"];
+const NAV = ["Dịch Vụ", "Dự Án", "Quy Trình"];
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const [active, setActive] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [lang, setLang] = useState<"vi" | "en">("vi");
   const currentIdx = useRef(0);
 
   const goTo = (i: number) => {
@@ -37,7 +42,9 @@ export default function Home() {
       },
       { threshold: 0.4 }
     );
-    sectionRefs.current.forEach((el) => { if (el) observer.observe(el); });
+    sectionRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -49,79 +56,226 @@ export default function Home() {
     <>
       {/* NAV */}
       <nav
-        className="nav-pad fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-all duration-500"
+        className="nav-pad fixed top-0 left-0 right-0 z-50 flex items-center"
         style={{
-          padding: "28px 56px",
-          background:
-            active > 0 && active < 4 ? "rgba(8,8,8,0.85)" : "transparent",
-          backdropFilter: active > 0 && active < 4 ? "blur(16px)" : "none",
+          padding: "0 56px",
+          height: 64,
+          background: "transparent",
         }}
       >
-        <button onClick={() => goTo(0)}>
+        {/* Left: Logo */}
+        <button
+          onClick={() => goTo(0)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexShrink: 0,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
           <Image
             src="/logo.png"
             alt="Saigon Pool"
-            width={100}
-            height={40}
+            width={52}
+            height={52}
             style={{ objectFit: "contain" }}
           />
         </button>
 
-        {/* Desktop nav */}
-        <ul className="nav-links flex items-center gap-12">
+        {/* Center nav — absolutely centered */}
+        <ul
+          className="nav-center"
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+          }}
+        >
           {NAV.map((label, i) => (
             <li key={label}>
               <button
                 onClick={() => goTo(i + 1)}
-                className="text-xs uppercase tracking-widest relative group/nav"
                 style={{
-                  color: "white",
-                  textShadow: "0 1px 8px rgba(0,0,0,0.6)",
+                  padding: "6px 16px",
+                  borderRadius: 99,
+                  fontSize: "0.72rem",
+                  letterSpacing: "0.05em",
+                  background:
+                    active === i + 1
+                      ? active === 0
+                        ? "rgba(255,255,255,0.2)"
+                        : "#111"
+                      : "transparent",
+                  color:
+                    active === i + 1
+                      ? "white"
+                      : active === 0
+                      ? "rgba(255,255,255,0.7)"
+                      : "#555",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.2s, color 0.2s",
+                  whiteSpace: "nowrap",
+                  fontWeight: active === i + 1 ? 500 : 400,
+                }}
+                onMouseEnter={(e) => {
+                  if (active !== i + 1)
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      active === 0 ? "white" : "#111";
+                }}
+                onMouseLeave={(e) => {
+                  if (active !== i + 1)
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      active === 0 ? "rgba(255,255,255,0.7)" : "#555";
                 }}
               >
                 {label}
-                <span className="absolute left-0 -bottom-0.5 h-px w-0 bg-white transition-all duration-300 group-hover/nav:w-full" />
               </button>
             </li>
           ))}
         </ul>
 
+        {/* Right: phone pill + language toggle */}
+        <div
+          className="nav-right"
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          {/* Phone pill */}
+          <a
+            href="tel:02835190313"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background:
+                active === 0 ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.04)",
+              border: `1px solid ${
+                active === 0 ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.10)"
+              }`,
+              borderRadius: 99,
+              padding: "6px 14px",
+              color: active === 0 ? "rgba(255,255,255,0.9)" : "#333",
+              fontSize: "0.7rem",
+              letterSpacing: "0.04em",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              transition: "background 0.2s, border-color 0.2s, color 0.3s",
+            }}
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            028 3519 0313
+          </a>
+
+          {/* Language toggle pills */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
+              background:
+                active === 0 ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.04)",
+              border: `1px solid ${
+                active === 0 ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.10)"
+              }`,
+              borderRadius: 99,
+              padding: 3,
+              transition: "background 0.3s, border-color 0.3s",
+            }}
+          >
+            {(["vi", "en"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => {
+                  setLang(l);
+                  if (l !== lang) setLangOpen(true);
+                }}
+                style={{
+                  padding: "4px 13px",
+                  borderRadius: 99,
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background:
+                    lang === l
+                      ? active === 0
+                        ? "rgba(255,255,255,0.9)"
+                        : "#111"
+                      : "transparent",
+                  color:
+                    lang === l
+                      ? active === 0
+                        ? "#111"
+                        : "white"
+                      : active === 0
+                      ? "rgba(255,255,255,0.6)"
+                      : "#777",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.2s, color 0.2s",
+                }}
+              >
+                {l === "vi" ? "VI" : "EN"}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Mobile hamburger */}
         <button
           className="mobile-menu-btn flex flex-col justify-center gap-[5px]"
           onClick={() => setMenuOpen((o) => !o)}
-          style={{ width: 24, padding: 0, background: "none", border: "none" }}
+          style={{
+            marginLeft: "auto",
+            width: 24,
+            padding: 0,
+            background: "none",
+            border: "none",
+          }}
         >
-          <span
-            style={{
-              display: "block",
-              width: menuOpen ? "100%" : "100%",
-              height: 1,
-              background: "white",
-              transition: "transform 0.3s, opacity 0.3s",
-              transform: menuOpen ? "translateY(6px) rotate(45deg)" : "none",
-            }}
-          />
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: 1,
-              background: "white",
-              transition: "opacity 0.3s",
-              opacity: menuOpen ? 0 : 1,
-            }}
-          />
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: 1,
-              background: "white",
-              transition: "transform 0.3s, opacity 0.3s",
-              transform: menuOpen ? "translateY(-6px) rotate(-45deg)" : "none",
-            }}
-          />
+          {[
+            menuOpen ? "translateY(6px) rotate(45deg)" : "none",
+            "none",
+            menuOpen ? "translateY(-6px) rotate(-45deg)" : "none",
+          ].map((transform, idx) => (
+            <span
+              key={idx}
+              style={{
+                display: "block",
+                width: "100%",
+                height: 1.5,
+                background: active === 0 ? "white" : "#111",
+                transition: "transform 0.3s, opacity 0.3s, background 0.3s",
+                transform,
+                opacity: idx === 1 && menuOpen ? 0 : 1,
+              }}
+            />
+          ))}
         </button>
       </nav>
 
@@ -130,7 +284,7 @@ export default function Home() {
         <div
           className="mobile-menu-overlay fixed inset-0 z-40 flex flex-col items-center justify-center gap-10"
           style={{
-            background: "rgba(4,4,4,0.96)",
+            background: "rgba(255,255,255,0.97)",
             backdropFilter: "blur(20px)",
           }}
         >
@@ -141,18 +295,102 @@ export default function Home() {
                 goTo(i + 1);
                 setMenuOpen(false);
               }}
-              className="text-white uppercase font-light tracking-[0.4em] text-xl transition-opacity duration-200"
-              style={{ opacity: active === i + 1 ? 1 : 0.45 }}
+              style={{
+                fontSize: "1.1rem",
+                fontWeight: active === i + 1 ? 600 : 400,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: active === i + 1 ? "#111" : "#999",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                transition: "color 0.2s",
+              }}
             >
               {label}
             </button>
           ))}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginTop: 12,
+            }}
+          >
+            <a
+              href="tel:02835190313"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: "rgba(0,0,0,0.05)",
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: 99,
+                padding: "8px 18px",
+                color: "#333",
+                fontSize: "0.75rem",
+                letterSpacing: "0.05em",
+                textDecoration: "none",
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              028 3519 0313
+            </a>
+            <div
+              style={{
+                display: "flex",
+                gap: 3,
+                background: "rgba(0,0,0,0.04)",
+                border: "1px solid rgba(0,0,0,0.10)",
+                borderRadius: 99,
+                padding: 3,
+              }}
+            >
+              {(["vi", "en"] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => {
+                    setLang(l);
+                    setMenuOpen(false);
+                    if (l !== lang) setLangOpen(true);
+                  }}
+                  style={{
+                    padding: "5px 14px",
+                    borderRadius: 99,
+                    fontSize: "0.65rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: lang === l ? "#111" : "transparent",
+                    color: lang === l ? "white" : "#777",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {l === "vi" ? "VI" : "EN"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* SIDE DOTS */}
       <div className="side-dots fixed right-8 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-[10px]">
-        {[...Array(5)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
@@ -160,7 +398,14 @@ export default function Home() {
               width: 5,
               height: active === i ? 20 : 5,
               borderRadius: 99,
-              background: active === i ? "white" : "rgba(255,255,255,0.22)",
+              background:
+                active === 0
+                  ? active === i
+                    ? "white"
+                    : "rgba(255,255,255,0.28)"
+                  : active === i
+                  ? "#111"
+                  : "rgba(0,0,0,0.18)",
               transition: "all 0.35s ease",
               display: "block",
             }}
@@ -168,26 +413,195 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Language popup */}
+      {langOpen && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center"
+          style={{
+            background: "rgba(0,0,0,0.18)",
+            backdropFilter: "blur(8px)",
+          }}
+          onClick={() => setLangOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#F8F8F6",
+              border: "1px solid rgba(0,0,0,0.09)",
+              borderRadius: 20,
+              padding: "44px 48px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 28,
+              minWidth: 320,
+              maxWidth: "90vw",
+              boxShadow: "0 8px 48px rgba(0,0,0,0.10)",
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
+              <p
+                style={{
+                  color: "rgba(0,0,0,0.35)",
+                  fontSize: "0.62rem",
+                  letterSpacing: "0.45em",
+                  textTransform: "uppercase",
+                  marginBottom: 14,
+                }}
+              >
+                Language / Ngôn ngữ
+              </p>
+              <p
+                style={{
+                  color: "#111",
+                  fontSize: "1.2rem",
+                  fontWeight: 300,
+                  letterSpacing: "0.02em",
+                  lineHeight: 1.45,
+                }}
+              >
+                Bạn muốn xem trang web
+                <br />
+                bằng ngôn ngữ nào?
+              </p>
+              <p
+                style={{
+                  color: "rgba(0,0,0,0.4)",
+                  fontSize: "0.78rem",
+                  fontWeight: 300,
+                  letterSpacing: "0.02em",
+                  marginTop: 8,
+                }}
+              >
+                Which language do you prefer?
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 12 }}>
+              {[
+                {
+                  l: "vi" as const,
+                  flag: "🇻🇳",
+                  primary: "Tiếng Việt",
+                  secondary: "Vietnamese",
+                },
+                {
+                  l: "en" as const,
+                  flag: "🇬🇧",
+                  primary: "English",
+                  secondary: "Tiếng Anh",
+                },
+              ].map(({ l, flag, primary, secondary }) => (
+                <button
+                  key={l}
+                  onClick={() => {
+                    setLang(l);
+                    setLangOpen(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    background: lang === l ? "#111" : "rgba(0,0,0,0.03)",
+                    border: `1px solid ${
+                      lang === l ? "#111" : "rgba(0,0,0,0.10)"
+                    }`,
+                    borderRadius: 14,
+                    padding: "18px 30px",
+                    color: lang === l ? "white" : "#222",
+                    cursor: "pointer",
+                    transition:
+                      "background 0.2s, border-color 0.2s, color 0.2s",
+                    minWidth: 118,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (lang !== l) {
+                      (e.currentTarget as HTMLButtonElement).style.background =
+                        "rgba(0,0,0,0.07)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor =
+                        "rgba(0,0,0,0.2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (lang !== l) {
+                      (e.currentTarget as HTMLButtonElement).style.background =
+                        "rgba(0,0,0,0.03)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor =
+                        "rgba(0,0,0,0.10)";
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: "1.5rem" }}>{flag}</span>
+                  <span
+                    style={{
+                      fontSize: "0.82rem",
+                      fontWeight: 500,
+                      letterSpacing: "0.03em",
+                    }}
+                  >
+                    {primary}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.62rem",
+                      opacity: 0.5,
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {secondary}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setLangOpen(false)}
+              style={{
+                color: "rgba(0,0,0,0.25)",
+                fontSize: "0.62rem",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color =
+                  "rgba(0,0,0,0.6)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color =
+                  "rgba(0,0,0,0.25)";
+              }}
+            >
+              Đóng / Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SCROLL CONTAINER */}
       <div ref={containerRef}>
         {/* ─── HERO ─── */}
         <section
           ref={ref(0)}
           className="relative h-screen w-full overflow-hidden flex items-center justify-center"
-          style={{ scrollSnapAlign: "start", background: "#000" }}
+          style={{
+            scrollSnapAlign: "start",
+            background: "#000",
+            backgroundImage: "url('/photos/tilebg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          <Image
-            src="/videos/background.png"
-            alt="Hero background"
-            fill
-            className="object-cover"
-            priority
-          />
+          <WaterCanvas />
 
           <div className="relative z-10 flex flex-col items-center gap-5">
             <Image
               src="/logo.png"
-              alt="Saigon Pool"
+              alt="Saigonpool"
               width={280}
               height={112}
               style={{ objectFit: "contain" }}
@@ -216,23 +630,26 @@ export default function Home() {
           ref={ref(1)}
           id="dich-vu"
           className="h-screen w-full flex items-center justify-center"
-          style={{ scrollSnapAlign: "start", background: "#0b0b0b" }}
+          style={{ scrollSnapAlign: "start", background: "#F8F8F6" }}
         >
           <div
             className="section-inner"
-            style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
+            style={{ width: "100%", maxWidth: 1400, padding: "0 56px" }}
           >
-            <Label>Dịch Vụ</Label>
-            <h2
-              className="section-title text-white font-light text-center"
-              style={{
-                fontSize: "2.6rem",
-                letterSpacing: "0.02em",
-                margin: "20px 0 64px",
-              }}
-            >
-              Những Gì Chúng Tôi Làm
-            </h2>
+            <div style={{ marginBottom: 56 }}>
+              <p style={{ fontSize: "0.6rem", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 12, fontWeight: 500 }}>
+                Dịch Vụ
+              </p>
+              <h2
+                className="section-title"
+                style={{ fontSize: "2.8rem", fontWeight: 300, letterSpacing: "-0.01em", color: "#111", marginBottom: 20, lineHeight: 1.15 }}
+              >
+                Những Gì<br />Chúng Tôi Làm
+              </h2>
+              <p style={{ fontSize: "0.85rem", lineHeight: 1.8, color: "rgba(0,0,0,0.45)", maxWidth: 360 }}>
+                Dịch vụ toàn diện từ tư vấn, thiết kế đến thi công và bảo trì — mỗi công trình đạt chuẩn cao nhất.
+              </p>
+            </div>
 
             <div
               className="services-grid"
@@ -240,7 +657,7 @@ export default function Home() {
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr 1fr",
                 gap: 1,
-                background: "rgba(255,255,255,0.07)",
+                background: "rgba(0,0,0,0.07)",
               }}
             >
               {[
@@ -260,38 +677,38 @@ export default function Home() {
                 <div
                   key={s.t}
                   className="group transition-colors duration-400"
-                  style={{ background: "#0b0b0b", padding: "44px 36px 44px" }}
+                  style={{ background: "#F8F8F6", padding: "44px 36px 44px" }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.03)")
+                    (e.currentTarget.style.background = "rgba(0,0,0,0.02)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "#0b0b0b")
+                    (e.currentTarget.style.background = "#fff")
                   }
                 >
                   <div
                     style={{
                       width: 28,
                       height: 1,
-                      background: "rgba(255,255,255,0.3)",
+                      background: "rgba(0,0,0,0.2)",
                       marginBottom: 32,
                       transition: "width 0.3s",
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.width = "56px")}
                   />
                   <h3
-                    className="text-white font-light"
+                    className="font-light"
                     style={{
                       fontSize: "1rem",
                       letterSpacing: "0.04em",
                       marginBottom: 16,
+                      color: "#111",
                     }}
                   >
                     {s.t}
                   </h3>
                   <p
                     className="text-sm leading-7"
-                    style={{ color: "rgba(255,255,255,0.38)" }}
+                    style={{ color: "rgba(0,0,0,0.45)" }}
                   >
                     {s.d}
                   </p>
@@ -306,122 +723,348 @@ export default function Home() {
           ref={ref(2)}
           id="du-an"
           className="w-full flex flex-col"
-          style={{ background: "#080808", padding: "80px 0 64px" }}
+          style={{ background: "#F8F8F6", padding: "72px 0 64px" }}
         >
           <div
             className="portfolio-header"
-            style={{ padding: "0 56px", marginBottom: 40 }}
+            style={{ maxWidth: 1400, width: "100%", padding: "0 56px", marginBottom: 36, margin: "0 auto 36px" }}
           >
-            <Label>Dự Án</Label>
-            <h2
-              className="section-title text-white font-light text-center"
+            <div style={{ marginBottom: 36 }}>
+              <p style={{ fontSize: "0.6rem", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 12, fontWeight: 500 }}>
+                Dự Án
+              </p>
+              <h2
+                className="section-title"
+                style={{ fontSize: "2.8rem", fontWeight: 300, letterSpacing: "-0.01em", color: "#111", marginBottom: 20, lineHeight: 1.15 }}
+              >
+                Công Trình<br />Tiêu Biểu
+              </h2>
+              <p style={{ fontSize: "0.85rem", lineHeight: 1.8, color: "rgba(0,0,0,0.45)", maxWidth: 360 }}>
+                Hơn 26 năm với hàng trăm công trình hồ bơi, sauna và khu vui chơi nước trên khắp Việt Nam.
+              </p>
+            </div>
+          </div>
+
+          <PortfolioGrid />
+        </section>
+
+        {/* ─── STATS ─── */}
+        <section
+          style={{ background: "#111", padding: "72px 0" }}
+        >
+          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 56px" }}>
+            <div
               style={{
-                fontSize: "2.6rem",
-                letterSpacing: "0.02em",
-                margin: "20px 0 0",
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 1,
+                background: "rgba(255,255,255,0.07)",
               }}
             >
-              Công Trình Tiêu Biểu
-            </h2>
+              {[
+                { value: "26+", label: "Năm Kinh Nghiệm", sub: "Từ năm 1998" },
+                { value: "500+", label: "Hồ Bơi & Sauna", sub: "Đã hoàn thành" },
+                { value: "30+", label: "Đối Tác", sub: "Doanh nghiệp lớn" },
+                { value: "100%", label: "Bảo Hành", sub: "Mỗi công trình" },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    background: "#111",
+                    padding: "48px 40px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "3.2rem",
+                      fontWeight: 200,
+                      letterSpacing: "-0.02em",
+                      color: "white",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {s.value}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.7)",
+                      marginTop: 4,
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.65rem",
+                      letterSpacing: "0.06em",
+                      color: "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    {s.sub}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <ExpandingGrid />
+        </section>
+
+        {/* ─── CLIENTS ─── */}
+        <section style={{ background: "#F8F8F6", padding: "80px 0" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 56px" }}>
+            <div style={{ marginBottom: 56 }}>
+              <p style={{ fontSize: "0.6rem", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 12, fontWeight: 500 }}>
+                Đối Tác
+              </p>
+              <h2
+                style={{ fontSize: "2.8rem", fontWeight: 300, letterSpacing: "-0.01em", color: "#111", marginBottom: 20, lineHeight: 1.15 }}
+              >
+                Khách Hàng<br />Tiêu Biểu
+              </h2>
+              <p style={{ fontSize: "0.85rem", lineHeight: 1.8, color: "rgba(0,0,0,0.45)", maxWidth: 360 }}>
+                Tin tưởng bởi các tập đoàn, khách sạn và khu nghỉ dưỡng hàng đầu tại Việt Nam.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(6, 1fr)",
+                gap: 1,
+                background: "rgba(0,0,0,0.07)",
+              }}
+            >
+              {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                <div
+                  key={n}
+                  style={{
+                    background: "#F8F8F6",
+                    padding: "28px 24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    aspectRatio: "3/2",
+                  }}
+                >
+                  <img
+                    src={`/saigonpool_client_logo/${n}.png.avif`}
+                    alt={`Client ${n}`}
+                    style={{
+                      maxWidth: "90%",
+                      maxHeight: "75%",
+                      objectFit: "contain",
+                      filter: "grayscale(1)",
+                      opacity: 0.55,
+                      transition: "opacity 0.3s, filter 0.3s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0)";
+                      (e.currentTarget as HTMLImageElement).style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.filter = "grayscale(1)";
+                      (e.currentTarget as HTMLImageElement).style.opacity = "0.55";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* ─── PROCESS ─── */}
         <section
           ref={ref(3)}
           id="quy-trinh"
-          className="h-screen w-full flex items-center justify-center"
-          style={{ scrollSnapAlign: "start", background: "#0b0b0b" }}
+          className="w-full flex items-center justify-center"
+          style={{ scrollSnapAlign: "start", background: "#F8F8F6", padding: "80px 0" }}
         >
           <div
             className="section-inner"
-            style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
+            style={{ width: "100%", maxWidth: 1400, padding: "0 56px" }}
           >
-            <Label>Quy Trình</Label>
-            <h2
-              className="section-title text-white font-light text-center"
-              style={{
-                fontSize: "2.6rem",
-                letterSpacing: "0.02em",
-                margin: "20px 0 72px",
-              }}
-            >
-              Cách Chúng Tôi Làm Việc
-            </h2>
+            <div style={{ marginBottom: 72 }}>
+              <p style={{ fontSize: "0.6rem", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 12, fontWeight: 500 }}>
+                Quy Trình
+              </p>
+              <h2
+                className="section-title"
+                style={{ fontSize: "2.8rem", fontWeight: 300, letterSpacing: "-0.01em", color: "#111", marginBottom: 20, lineHeight: 1.15 }}
+              >
+                Cách Chúng Tôi<br />Làm Việc
+              </h2>
+              <p style={{ fontSize: "0.85rem", lineHeight: 1.8, color: "rgba(0,0,0,0.45)", maxWidth: 360 }}>
+                10 bước chuẩn hoá đảm bảo tiến độ, chất lượng và minh bạch trong từng giai đoạn thi công.
+              </p>
+            </div>
 
             <div
               className="process-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 32,
+                gap: "48px 56px",
               }}
             >
               {[
                 {
                   n: "01",
-                  t: "Giới Thiệu",
-                  d: "Hơn 26 năm kinh nghiệm tư vấn, thiết kế và thi công hồ bơi, khu vui chơi nước và spa với thiết bị nhập khẩu từ Tây Ban Nha, Úc, New Zealand và Thụy Điển.",
+                  t: "Khảo Sát Hiện Trạng",
+                  d: "Đội ngũ kỹ thuật đến tận nơi khảo sát địa hình, đo đạc và đánh giá điều kiện thực tế của công trình.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="22" cy="22" r="10" />
+                      <line x1="30" y1="30" x2="40" y2="40" />
+                      <line x1="22" y1="16" x2="22" y2="28" />
+                      <line x1="16" y1="22" x2="28" y2="22" />
+                    </svg>
+                  ),
                 },
                 {
                   n: "02",
-                  t: "Khảo Sát",
-                  d: "Đội ngũ kỹ thuật khảo sát thực địa, lập báo cáo chi tiết và đề xuất giải pháp tối ưu phù hợp với điều kiện thực tế của công trình.",
+                  t: "Chuẩn Bị Mặt Bằng",
+                  d: "San lấp, dọn dẹp và chuẩn bị mặt bằng thi công, đảm bảo điều kiện an toàn và thuận lợi cho các bước tiếp theo.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="6" y="30" width="36" height="10" rx="1" />
+                      <path d="M12 30V20l6-8h12l6 8v10" />
+                      <line x1="6" y1="40" x2="42" y2="40" />
+                    </svg>
+                  ),
                 },
                 {
                   n: "03",
-                  t: "Thiết Kế",
-                  d: "Lựa chọn vật liệu từ bộ sưu tập đa dạng, tự do điều chỉnh kích thước và hình dạng để tạo nên hồ bơi độc đáo theo phong cách riêng.",
+                  t: "Khoan / Đào Hố",
+                  d: "Tiến hành khoan hoặc đào hố hồ bơi theo đúng kích thước thiết kế, đảm bảo độ sâu và hình dạng chính xác.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M24 8v24" />
+                      <path d="M16 20l8 12 8-12" />
+                      <ellipse cx="24" cy="36" rx="12" ry="4" />
+                    </svg>
+                  ),
                 },
                 {
                   n: "04",
-                  t: "Thi Công",
-                  d: "Lập kế hoạch và dự toán chi tiết từng hạng mục. Đội thi công chuyên nghiệp đảm bảo tiêu chuẩn kỹ thuật, an toàn và tiến độ cam kết.",
+                  t: "Lắp Đặt Hệ Thống Cấp Nước",
+                  d: "Lắp đặt đường ống cấp, thoát nước và hệ thống tuần hoàn theo tiêu chuẩn kỹ thuật quốc tế.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 24h8l4-8 6 16 4-10 4 6h6" />
+                      <path d="M8 36c0 0 4-4 8 0s8 0 8 0 4-4 8 0 8 0 8 0" />
+                    </svg>
+                  ),
                 },
                 {
                   n: "05",
-                  t: "Bàn Giao",
-                  d: "Kiểm tra toàn diện trước bàn giao, hướng dẫn vận hành và bảo trì. Chính sách bảo hành rõ ràng và hỗ trợ lâu dài sau khi sử dụng.",
+                  t: "Thi Công Phần Móng",
+                  d: "Đổ bê tông và gia cố kết cấu móng hồ bơi, đảm bảo độ bền vững và chịu lực lâu dài cho toàn bộ công trình.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="8" y="32" width="32" height="8" rx="1" />
+                      <rect x="14" y="22" width="20" height="10" />
+                      <rect x="18" y="14" width="12" height="8" />
+                    </svg>
+                  ),
                 },
-              ].map((p, idx) => (
-                <div
-                  key={p.n}
-                  className="flex flex-col"
-                  style={{ paddingTop: idx % 2 === 1 ? 40 : 0 }}
-                >
-                  <span
-                    className="font-thin"
-                    style={{
-                      fontSize: "3.5rem",
-                      color: "rgba(255,255,255,0.08)",
-                      lineHeight: 1,
-                      marginBottom: 24,
-                    }}
-                  >
-                    {p.n}
-                  </span>
-                  <div
-                    style={{
-                      width: 24,
-                      height: 1,
-                      background: "rgba(255,255,255,0.2)",
-                      marginBottom: 20,
-                    }}
-                  />
-                  <h3
-                    className="text-white font-light"
-                    style={{
-                      fontSize: "0.9rem",
-                      letterSpacing: "0.06em",
-                      marginBottom: 14,
-                    }}
-                  >
-                    {p.t}
-                  </h3>
+                {
+                  n: "06",
+                  t: "Xây Tường Hồ Bơi",
+                  d: "Xây dựng tường bao quanh hồ bơi bằng vật liệu chất lượng cao, đảm bảo độ phẳng, thẳng và kín hoàn toàn.",
+                  icon: (
+                    <img src="/steps/6.png" alt="Xây Tường Hồ Bơi" style={{ objectFit: "contain", objectPosition: "left", width: "100%", height: "100%" }} />
+                  ),
+                },
+                {
+                  n: "07",
+                  t: "Hệ Thống Chống Thấm",
+                  d: "Thi công lớp chống thấm chuyên dụng toàn bộ bề mặt hồ, ngăn ngừa rò rỉ và bảo vệ kết cấu bê tông.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M24 8c0 0-12 10-12 20a12 12 0 0 0 24 0C36 18 24 8 24 8z" />
+                      <path d="M24 24l-4 4" strokeOpacity="0.5" />
+                    </svg>
+                  ),
+                },
+                {
+                  n: "08",
+                  t: "Lắp Đặt Máy Lọc Nước",
+                  d: "Lắp đặt hệ thống lọc, bơm và thiết bị xử lý nước nhập khẩu từ các thương hiệu hàng đầu châu Âu.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="24" cy="24" r="10" />
+                      <circle cx="24" cy="24" r="4" />
+                      <line x1="24" y1="8" x2="24" y2="14" />
+                      <line x1="24" y1="34" x2="24" y2="40" />
+                      <line x1="8" y1="24" x2="14" y2="24" />
+                      <line x1="34" y1="24" x2="40" y2="24" />
+                    </svg>
+                  ),
+                },
+                {
+                  n: "09",
+                  t: "Ốp Lát Gạch",
+                  d: "Ốp lát gạch mosaic hoặc đá cao cấp toàn bộ bề mặt hồ bơi, tạo nên vẻ đẹp thẩm mỹ và độ bền theo thời gian.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="8" y="8" width="14" height="14" rx="1" />
+                      <rect x="26" y="8" width="14" height="14" rx="1" />
+                      <rect x="8" y="26" width="14" height="14" rx="1" />
+                      <rect x="26" y="26" width="14" height="14" rx="1" />
+                    </svg>
+                  ),
+                },
+                {
+                  n: "10",
+                  t: "Bàn Giao & Hướng Dẫn",
+                  d: "Kiểm tra toàn diện, bàn giao công trình, hướng dẫn vận hành và bảo trì. Bảo hành rõ ràng và hỗ trợ lâu dài.",
+                  icon: (
+                    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#5BA8A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 24l10 10 18-18" />
+                      <circle cx="24" cy="24" r="18" />
+                    </svg>
+                  ),
+                },
+              ].map((p) => (
+                <div key={p.n} className="flex flex-col" style={{ gap: 16 }}>
+                  {/* Icon */}
+                  <div style={{ width: "100%", height: 56 }}>
+                    {p.icon}
+                  </div>
+                  {/* Step label */}
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "0.6rem",
+                        letterSpacing: "0.2em",
+                        textTransform: "uppercase",
+                        color: "#5BA8A0",
+                        marginBottom: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Quy Trình {p.n}
+                    </p>
+                    <h3
+                      style={{
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.02em",
+                        color: "#111",
+                      }}
+                    >
+                      {p.t}
+                    </h3>
+                  </div>
                   <p
                     className="text-sm leading-7"
-                    style={{ color: "rgba(255,255,255,0.35)" }}
+                    style={{ color: "rgba(0,0,0,0.45)" }}
                   >
                     {p.d}
                   </p>
@@ -431,48 +1074,20 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── CONTACT ─── */}
-        <section
-          ref={ref(4)}
-          id="lien-he"
-          className="relative h-screen w-full flex items-center justify-center overflow-hidden"
-          style={{
-            scrollSnapAlign: "start",
-            backgroundImage: "url('/photos/tilebg.png')",
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-          }}
+        {/* CONTACT REMOVED */}
+        <div style={{ display: "none" }}
         >
-          <WaterCanvas />
-
-          <div
-            className="contact-outer relative z-10"
-            style={{ width: "100%", maxWidth: 960, padding: "0 56px" }}
-          >
-            <div
-              className="contact-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1.4fr",
-                gap: 80,
-                alignItems: "center",
-                background: "rgba(256, 256, 256, 0.00)",
-                backdropFilter: "blur(4px)",
-                padding: "56px 64px",
-                border: "1px solid rgba(255,255,255,0.07)",
-              }}
-            >
               {/* Left — info */}
               <div>
-                <Label left>Liên Hệ</Label>
+                <p style={{ fontSize: "0.62rem", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 16 }}>Liên Hệ</p>
                 <h2
-                  className="text-white font-light contact-title"
+                  className="font-light contact-title"
                   style={{
                     fontSize: "2.8rem",
                     letterSpacing: "0.01em",
                     margin: "20px 0 24px",
                     lineHeight: 1.15,
+                    color: "#111",
                   }}
                 >
                   Bắt Đầu
@@ -481,7 +1096,7 @@ export default function Home() {
                 </h2>
                 <p
                   className="text-sm leading-7"
-                  style={{ color: "rgba(255,255,255,0.65)", marginBottom: 48 }}
+                  style={{ color: "rgba(0,0,0,0.45)", marginBottom: 48 }}
                 >
                   Hãy để chúng tôi biến ý tưởng của bạn thành hiện thực. Liên hệ
                   để được tư vấn miễn phí.
@@ -554,7 +1169,7 @@ export default function Home() {
                     <div key={c.label} className="relative group/item">
                       <p
                         className="text-[10px] tracking-[0.4em] uppercase mb-1"
-                        style={{ color: "rgba(255,255,255,0.45)" }}
+                        style={{ color: "rgba(0,0,0,0.35)" }}
                       >
                         {c.label}
                       </p>
@@ -567,13 +1182,12 @@ export default function Home() {
                             : undefined
                         }
                         className="text-sm font-light transition-colors duration-200"
-                        style={{ color: "rgba(255,255,255,0.9)" }}
+                        style={{ color: "#111" }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#60A5FA")
+                          (e.currentTarget.style.color = "#5BA8A0")
                         }
                         onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            "rgba(255,255,255,0.9)")
+                          (e.currentTarget.style.color = "#111")
                         }
                       >
                         {c.value}
@@ -588,7 +1202,7 @@ export default function Home() {
                             display: "flex",
                             alignItems: "center",
                             gap: 6,
-                            background: "white",
+                            background: "#F8F8F6",
                             color: "#000",
                             fontSize: "0.65rem",
                             fontWeight: 500,
@@ -604,7 +1218,7 @@ export default function Home() {
                           style={{
                             width: 6,
                             height: 6,
-                            background: "white",
+                            background: "#F8F8F6",
                             transform: "rotate(45deg)",
                             margin: "-3px 14px 0",
                           }}
@@ -660,33 +1274,42 @@ export default function Home() {
                   <textarea
                     rows={3}
                     placeholder="Mô tả dự án của bạn..."
-                    className="w-full bg-transparent text-white text-sm placeholder-white/40 focus:outline-none resize-none leading-7"
+                    className="w-full bg-transparent text-sm focus:outline-none resize-none leading-7"
                     style={{
-                      borderBottom: "1px solid rgba(255,255,255,0.25)",
+                      color: "#111",
+                      borderBottom: "1px solid rgba(0,0,0,0.15)",
                       padding: "16px 0",
                       transition: "border-color 0.2s",
                       display: "block",
                     }}
                     onFocus={(e) =>
-                      (e.target.style.borderBottomColor =
-                        "rgba(255,255,255,0.7)")
+                      (e.target.style.borderBottomColor = "rgba(0,0,0,0.5)")
                     }
                     onBlur={(e) =>
-                      (e.target.style.borderBottomColor =
-                        "rgba(255,255,255,0.25)")
+                      (e.target.style.borderBottomColor = "rgba(0,0,0,0.15)")
                     }
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="text-xs tracking-[0.35em] uppercase transition-all duration-300 hover:bg-white/20 hover:text-black"
+                  className="text-xs tracking-[0.35em] uppercase transition-all duration-300"
                   style={{
                     marginTop: 36,
                     padding: "16px 0",
-                    border: "1px solid rgba(255,255,255,0.25)",
-                    color: "white",
+                    border: "1px solid rgba(0,0,0,0.2)",
+                    color: "#111",
                     letterSpacing: "0.3em",
+                    background: "transparent",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "#111";
+                    (e.currentTarget as HTMLButtonElement).style.color = "white";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    (e.currentTarget as HTMLButtonElement).style.color = "#111";
                   }}
                 >
                   Gửi Yêu Cầu
@@ -694,15 +1317,335 @@ export default function Home() {
 
                 <p
                   className="text-center text-xs tracking-widest"
-                  style={{ color: "rgba(255,255,255,0.18)", marginTop: 32 }}
+                  style={{ color: "rgba(0,0,0,0.2)", marginTop: 32 }}
                 >
-                  © {new Date().getFullYear()} Saigon Pool. All rights reserved.
-                </p>
-              </form>
+        </div>
+      </div>
+
+      {/* ─── FOOTER ─── */}
+      <footer style={{ background: "#F8F8F6" }}>
+
+        {/* CTA bar */}
+        <div
+          style={{
+            background: "#111",
+            padding: "13px 56px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span
+            style={{
+              color: "rgba(255,255,255,0.55)",
+              fontSize: "0.6rem",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+            }}
+          >
+            Đặt Hẹn Dịch Vụ Của Chúng Tôi Ngay Hôm Nay!
+          </span>
+          <a
+            href="tel:02835190313"
+            style={{
+              color: "white",
+              fontSize: "0.65rem",
+              letterSpacing: "0.12em",
+              textDecoration: "none",
+              opacity: 0.85,
+            }}
+          >
+            028 3519 0313
+          </a>
+        </div>
+
+        {/* Main: heading + map */}
+        <div
+          style={{
+            maxWidth: 1400,
+            margin: "0 auto",
+            padding: "80px 56px 64px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 80,
+            alignItems: "start",
+          }}
+        >
+          {/* Left */}
+          <div>
+            <h2
+              style={{
+                fontSize: "2.8rem",
+                fontWeight: 300,
+                letterSpacing: "-0.01em",
+                color: "#111",
+                lineHeight: 1.15,
+                marginBottom: 32,
+              }}
+            >
+              Bạn Quan Tâm Đến Việc
+              <br />
+              Hiện Thực Hóa Ước Mơ?
+            </h2>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                lineHeight: 1.8,
+                color: "rgba(0,0,0,0.45)",
+                maxWidth: 400,
+                marginBottom: 40,
+              }}
+            >
+              Điền vào mẫu liên hệ hoặc liên lạc trực tiếp để bắt đầu dự án
+              của bạn. Chúng tôi sẵn sàng tư vấn miễn phí.
+            </p>
+
+            {/* Contact pills */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                {
+                  href: "tel:02835190313",
+                  text: "028 3519 0313",
+                  icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  ),
+                },
+                {
+                  href: "https://maps.app.goo.gl/fkEcdE9EKqoS3T5Q9",
+                  text: "49L Quốc Hương, Thảo Điền, An Khánh, Hồ Chí Minh 70000",
+                  icon: (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                      <circle cx="12" cy="9" r="2.5" />
+                    </svg>
+                  ),
+                },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target={item.href.startsWith("https") ? "_blank" : undefined}
+                  rel={item.href.startsWith("https") ? "noopener noreferrer" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: "rgba(0,0,0,0.04)",
+                    border: "1px solid rgba(0,0,0,0.09)",
+                    borderRadius: 99,
+                    padding: "10px 18px",
+                    color: "#222",
+                    fontSize: "0.75rem",
+                    letterSpacing: "0.03em",
+                    textDecoration: "none",
+                    width: "fit-content",
+                    transition: "background 0.2s, border-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.08)";
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,0,0,0.18)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)";
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,0,0,0.09)";
+                  }}
+                >
+                  {item.icon}
+                  {item.text}
+                </a>
+              ))}
             </div>
           </div>
-        </section>
-      </div>
+
+          {/* Right: map */}
+          <div
+            style={{
+              overflow: "hidden",
+              borderRadius: 4,
+              height: 380,
+              border: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.0!2d106.7456!3d10.8031!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317527587!2sLinh+Linh+Dan+Pool+%26+Spa!5e0!3m2!1svi!2svn!4v1&q=49L+Qu%E1%BB%91c+H%C6%B0%C6%A1ng%2C+Th%E1%BA%A3o+%C4%90i%E1%BB%81n%2C+H%E1%BB%93+Ch%C3%AD+Minh"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </div>
+
+        {/* Sub-row: tagline + community */}
+        <div
+          style={{
+            maxWidth: 1400,
+            margin: "0 auto",
+            padding: "40px 56px 56px",
+            borderTop: "1px solid rgba(0,0,0,0.07)",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 80,
+            alignItems: "start",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.85rem",
+              lineHeight: 1.8,
+              color: "rgba(0,0,0,0.4)",
+              maxWidth: 420,
+            }}
+          >
+            Ưu tiên hàng đầu của Linh Linh Đan là cung cấp những sản phẩm tốt
+            nhất cho từng nhu cầu của bạn.
+          </p>
+
+          <div>
+            <p
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 300,
+                letterSpacing: "0.01em",
+                color: "#111",
+                lineHeight: 1.3,
+                marginBottom: 20,
+              }}
+            >
+              Cộng Đồng
+              <br />
+              Của Chúng Tôi.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {[
+                {
+                  href: "#",
+                  label: "Facebook",
+                  icon: (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg>
+                  ),
+                },
+                {
+                  href: "#",
+                  label: "X",
+                  icon: (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  ),
+                },
+                {
+                  href: "#",
+                  label: "Instagram",
+                  icon: (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+                    </svg>
+                  ),
+                },
+                {
+                  href: "#",
+                  label: "LinkedIn",
+                  icon: (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                      <rect x="2" y="9" width="4" height="12" />
+                      <circle cx="4" cy="4" r="2" />
+                    </svg>
+                  ),
+                },
+              ].map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(0,0,0,0.35)",
+                    background: "rgba(0,0,0,0.04)",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: 8,
+                    transition: "color 0.2s, background 0.2s",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "#111";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,0,0,0.35)";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)";
+                  }}
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom nav bar */}
+        <div
+          style={{
+            borderTop: "1px solid rgba(0,0,0,0.07)",
+            padding: "18px 56px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 24,
+          }}
+        >
+          <nav style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            {[
+              { label: "Trang Chủ", href: "/" },
+              { label: "Dịch Vụ", scroll: 1 },
+              { label: "Dự Án", scroll: 2 },
+              { label: "Quy Trình", scroll: 3 },
+              { label: "Liên Hệ", scroll: 4 },
+              { label: "Thư Viện", href: "/gallery" },
+            ].map((item) => (
+              <a
+                key={item.label}
+                href={item.href ?? "#"}
+                style={{
+                  fontSize: "0.62rem",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "rgba(0,0,0,0.38)",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#111")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,0,0,0.38)")}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <p
+            style={{
+              fontSize: "0.6rem",
+              letterSpacing: "0.15em",
+              color: "rgba(0,0,0,0.25)",
+            }}
+          >
+            © {new Date().getFullYear()} Saigon Pool — Linh Linh Đan Co., Ltd.
+          </p>
+        </div>
+      </footer>
     </>
   );
 }
@@ -718,229 +1661,185 @@ function UnderlineInput({
     <input
       type={type}
       placeholder={placeholder}
-      className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-white/40"
+      className="w-full bg-transparent text-sm focus:outline-none"
       style={{
-        borderBottom: "1px solid rgba(255,255,255,0.25)",
+        borderBottom: "1px solid rgba(0,0,0,0.15)",
         padding: "16px 0",
-        color: "white",
+        color: "#111",
         transition: "border-color 0.2s",
       }}
       onFocus={(e) =>
-        (e.target.style.borderBottomColor = "rgba(255,255,255,0.7)")
+        (e.target.style.borderBottomColor = "rgba(0,0,0,0.5)")
       }
       onBlur={(e) =>
-        (e.target.style.borderBottomColor = "rgba(255,255,255,0.25)")
+        (e.target.style.borderBottomColor = "rgba(0,0,0,0.15)")
       }
     />
   );
 }
 
-const e = (s: string) => "/" + s.split("/").map(encodeURIComponent).join("/");
-type Project = { name: string; photos: string[] };
 
-const PROJECTS: Project[] = [
-  { name: "An Nam Resort", photos: [e("photos/CT/AN NAM RESORT/main.jpg"), e("photos/CT/AN NAM RESORT/1.jpg"), e("photos/CT/AN NAM RESORT/2.jpg")] },
-  { name: "Anh Long – Thuận An", photos: [e("photos/CT/ANH LONG - THUẬN AN BD/main.jpg"), e("photos/CT/ANH LONG - THUẬN AN BD/z6001798243652_440afff9f7298dec50d42c1651206142.jpg"), e("photos/CT/ANH LONG - THUẬN AN BD/z6001798254175_bfd31685ac7f56c09ccdc141f3da91c8.jpg")] },
-  { name: "CT Anh Tâm – Thủ Dầu Một", photos: [e("photos/CT/CT ANH TÂM - THỦ DẦU MỘT/main.jpg"), e("photos/CT/CT ANH TÂM - THỦ DẦU MỘT/145250236_1053152928499636_8983928726142175707_n.jpg"), e("photos/CT/CT ANH TÂM - THỦ DẦU MỘT/145349759_1053152825166313_4622665047202296211_n.jpg"), e("photos/CT/CT ANH TÂM - THỦ DẦU MỘT/147278058_1053152898499639_8388114328228546847_n.jpg")] },
-  { name: "CT Anh Vũ – Lâm Đồng", photos: [e("photos/CT/CT ANH VŨ - LÂM ĐỒNG/main.png"), e("photos/CT/CT ANH VŨ - LÂM ĐỒNG/10.png"), e("photos/CT/CT ANH VŨ - LÂM ĐỒNG/11.png")] },
-  { name: "CT Chị Thùy – Lái Thiêu", photos: [e("photos/CT/CT CHỊ THÙY LÁI THIÊU/main.png"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/12.png"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/15.png"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/16.png"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/z7689856165383_513f500d02a2a7aa9d33f4c514b8af35.jpg"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/z7689856173029_20709352d349bef57cb6a029cd27d188.jpg"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/z7689856183017_bf69ca1c3be73bd6a97f4fff1cf96b52.jpg"), e("photos/CT/CT CHỊ THÙY LÁI THIÊU/z7689856183659_7ae647e1e5fb0fa184748e3823c1e59c.jpg")] },
-  { name: "CT Nhơn Trạch", photos: [e("photos/CT/CT NHƠN TRẠCH/main.jpg"), e("photos/CT/CT NHƠN TRẠCH/483883220_987190993398459_8261432256101663277_n.jpg"), e("photos/CT/CT NHƠN TRẠCH/484130688_987191143398444_3075465510373178487_n.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246697799_cc30d5a2c6276bd6656c16e3271530a9.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246708153_832ab4d11125f85be3a56fa1ecf7ad69.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246710305_23f2f6cd89ed0318e1bc7a7bc51bf536.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246717978_199858a6636cc7087b54fd834f3ffd80.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246721021_b6173593d1af6694f7cd93ba0f85720e.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246730244_c053bddec9750897f57c040843e7bc4f.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246734426_c543b1b5c724fdb5814163cb96ba5d08.jpg"), e("photos/CT/CT NHƠN TRẠCH/z7725246737487_80cd755ae1c30103c7b0708fb9fdea08.jpg")] },
-  { name: "CT Trường Bùi Thị Xuân – Đồng Nai", photos: [e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/main.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947551801_80c6b1908e7de04eb9a9e18a68ee4d8f.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585115_2d130f7ce1d2f01124b8762da2a4fcbd.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585116_3f700f005f684737a08fa0a30bc69bb0.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585118_4f0ff5a82b804f48239dcd32e7cc53c2.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585119_1d070ccf20973ba99222eb9b9ff4c238.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585120_ab3fdc6fbcbdc3abb43ea429de213294.jpg"), e("photos/CT/CT TRƯỜNG BÙI THỊ XUÂN - ĐỒNG NAI/z7666947585121_88e4041229ba34dd7e613c559516385b.jpg")] },
-  { name: "Gò Công – Tiền Giang", photos: [e("photos/CT/GÒ CÔNG - TIỀN GIANG/main.jpg"), e("photos/CT/GÒ CÔNG - TIỀN GIANG/z6001786159387_a292c79e8f6733ac14a404ff19eeb768.jpg"), e("photos/CT/GÒ CÔNG - TIỀN GIANG/z6001786997366_e2fdd18d3cdf708677b58f401f1e2335.jpg")] },
-  { name: "La Maison de Campagne", photos: [e("photos/CT/LA MAISON DE CAMPAGNE/main.jpg"), e("photos/CT/LA MAISON DE CAMPAGNE/33137410_1076375375861228_866307702605742080_n.jpg"), e("photos/CT/LA MAISON DE CAMPAGNE/37245640_1129460703886028_1887678499284582400_n.jpg"), e("photos/CT/LA MAISON DE CAMPAGNE/462228930_3105691639596248_265259701098415019_n.jpg")] },
-  { name: "Nguyễn Ư Dĩ", photos: [e("photos/CT/NGUYỄN Ư DĨ/main.jpg"), e("photos/CT/NGUYỄN Ư DĨ/524618688_1087321356718755_3465773905738856592_n.jpg"), e("photos/CT/NGUYỄN Ư DĨ/525601403_1087321360052088_3341107866079582956_n.jpg"), e("photos/CT/NGUYỄN Ư DĨ/525792076_1087322676718623_1918399872725374111_n.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933735801_0eeb4446de457dd3be12a3b5ab953217.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933758168_196ba717dab9e2e1b898f3b4edd18448.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933774605_33e287f71d7e4523db9e5f5131ec9817.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933798873_c671a073aa4d7abe752efb16fc03c454.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933823113_a7517ba02565e145c051a86e153ff208.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933836646_7ffb7b8867c50d12ab2476a5e45b2efc.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933849450_91841a370beeecea5ede97ee1a42dc25.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933874627_0241b5c0c4e82907f5ecf09ee411a839.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933905478_9a6628605282104b65922b6be841cebe.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933939374_336dfd5ac2b492b2cc0b708e186e0b8a.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725933971056_ec9be5da8eafa454ae1970b9dad2b0db.jpg"), e("photos/CT/NGUYỄN Ư DĨ/z7725934001843_a5e57df8757a25db64f70c6bc4f0d244.jpg")] },
-  { name: "Phòng Sauna 1", photos: [e("photos/CT/PHÒNG SAUNA 1/298754826_1410753066072952_158666123998050449_n.jpg"), e("photos/CT/PHÒNG SAUNA 1/298799770_1410753092739616_3641453143522959281_n.jpg"), e("photos/CT/PHÒNG SAUNA 1/299071314_1410753156072943_9023091062281397649_n.jpg"), e("photos/CT/PHÒNG SAUNA 1/299101914_1410753812739544_7037121145382090201_n.jpg"), e("photos/CT/PHÒNG SAUNA 1/299112273_1410753212739604_7758280801581717013_n.jpg")] },
-  { name: "Phòng Sauna 2", photos: [e("photos/CT/PHÒNG SAUNA 2/158291248_1074429726371956_6726411855873353599_n.jpg"), e("photos/CT/PHÒNG SAUNA 2/158445487_1074429849705277_2070508328466625463_n.jpg"), e("photos/CT/PHÒNG SAUNA 2/158618802_1074429823038613_4521882971511355926_n.jpg"), e("photos/CT/PHÒNG SAUNA 2/158828456_1074429746371954_5827632627542097321_n.jpg"), e("photos/CT/PHÒNG SAUNA 2/159461066_1074429803038615_6445194594242345609_n.jpg"), e("photos/CT/PHÒNG SAUNA 2/159479031_1074429783038617_8770533814173793204_n.jpg")] },
-  { name: "Phòng Sauna Thảo Điền", photos: [e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668219673_56f0fd836e9f143e0fc4ba861d2b785f.jpg"), e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668239998_411e701cbddbb0019e492d8e73cdeaa1.jpg"), e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668240002_8e81089538798d73ce4bcf9363c61b76.jpg"), e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668240003_e260eced0b2713c2ae841581042c6abc.jpg"), e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668258641_9bce953c3ebf0c21757a72f153857b5e.jpg"), e("photos/CT/PHÒNG SAUNA THẢO ĐIỀN/z7648668258889_50921869379d306ae0e155d6784dafa4.jpg")] },
-  { name: "Private Resident – Bình Dương", photos: [e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/main.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/270255094_1267387043742889_2129287397831394921_n.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/270382514_145064381219070_8025224364206930678_n.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/271655196_145064431219065_7438285800042806881_n.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/271748119_145064367885738_6747422466468919539_n.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/271885352_145064294552412_854493187644353716_n.jpg"), e("photos/CT/PRIVATE RESIDENT ( BINH DUONG )/271891853_145064277885747_6122016480736024317_n.jpg")] },
-  { name: "Singapore International School", photos: [e("photos/CT/SINGAPORE INTERNATITIONAL SCHOOL/main.jpg"), e("photos/CT/SINGAPORE INTERNATITIONAL SCHOOL/273887113_150859223972919_178405544567450680_n.jpg"), e("photos/CT/SINGAPORE INTERNATITIONAL SCHOOL/274031266_150859233972918_6702729223654071584_n.jpg")] },
-  { name: "Thuận An – Bình Dương", photos: [e("photos/CT/THUẬN AN - BD/main.jpg"), e("photos/CT/THUẬN AN - BD/115765989_915588362256094_2551826720722931032_n.jpg"), e("photos/CT/THUẬN AN - BD/116209459_915588278922769_1699565155035210381_n.jpg"), e("photos/CT/THUẬN AN - BD/116253019_915588478922749_4710923537349340389_n.jpg"), e("photos/CT/THUẬN AN - BD/116329363_915588272256103_1565437504983425668_n (1).jpg"), e("photos/CT/THUẬN AN - BD/116329363_915588272256103_1565437504983425668_n.jpg"), e("photos/CT/THUẬN AN - BD/116443757_915588445589419_8559847386291417476_n.jpg"), e("photos/CT/THUẬN AN - BD/116455554_915588495589414_7741820830875850095_n.jpg"), e("photos/CT/THUẬN AN - BD/116715470_915588408922756_2961384151389467850_n.jpg")] },
-  { name: "Thảo Điền – Q2", photos: [e("photos/CT/THẢO ĐIỀN - Q2/main.jpg"), e("photos/CT/THẢO ĐIỀN - Q2/120277032_961350977679832_9138570838912859010_n.jpg"), e("photos/CT/THẢO ĐIỀN - Q2/120293312_961351134346483_5320060672932495169_n.jpg"), e("photos/CT/THẢO ĐIỀN - Q2/120553060_961351084346488_3860618796638349751_n.jpg")] },
-  { name: "Thủ Dầu Một – Bình Dương", photos: [e("photos/CT/THỦ DẦU MỘT - BD/main.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/107829315_905592516589012_3131941180020331065_n.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/109141275_905592576589006_6489856170585189167_n.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/109175005_905592459922351_1449249139066561085_n.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/109714159_905592433255687_7937341406033198976_n.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/109833806_905592489922348_1977344106552080312_n.jpg"), e("photos/CT/THỦ DẦU MỘT - BD/110199054_905592546589009_6812740844022215080_n.jpg")] },
-  { name: "Tulip 29", photos: [e("photos/CT/TULIP 29/main.jpg"), e("photos/CT/TULIP 29/z7725938458271_ca9fd627260541edc312098bd4f4f6e9.jpg"), e("photos/CT/TULIP 29/z7725938467473_16671209fefbaf3557b2c9302779785f.jpg"), e("photos/CT/TULIP 29/z7725938493114_8a58c9026ee06aa3f68692f719b6d7a9.jpg"), e("photos/CT/TULIP 29/z7725938521132_7fea948c99ae0c178b1b0a8bfc825bd5.jpg"), e("photos/CT/TULIP 29/z7725938538962_5d22ce1e0139506e38145d6b6008bce7.jpg"), e("photos/CT/TULIP 29/z7725938562141_872b8830512ba7772d55739b9c8005c5.jpg"), e("photos/CT/TULIP 29/z7725938578691_deb5c1fc66426c6fa9c3d543bdc883ff.jpg"), e("photos/CT/TULIP 29/z7725938593989_08f7c68f0d28ad8c89d180e46e55e96d.jpg"), e("photos/CT/TULIP 29/z7725941165152_dddd6dd7148b5f400d01c39cc0a13696.jpg"), e("photos/CT/TULIP 29/z7725941180532_a5c8247db0c00ad89233c25ad4aa6a39.jpg"), e("photos/CT/TULIP 29/z7725941194012_c7689feb43dc94bfcd2c6d1270cbd819.jpg"), e("photos/CT/TULIP 29/z7725941206440_e3a5704f6c28b3f936b1553685da0967.jpg")] },
-  { name: "Tulip 8", photos: [e("photos/CT/TULIP 8/main.png"), e("photos/CT/TULIP 8/1.png"), e("photos/CT/TULIP 8/2.png"), e("photos/CT/TULIP 8/3.png"), e("photos/CT/TULIP 8/4.png"), e("photos/CT/TULIP 8/5.png"), e("photos/CT/TULIP 8/6.png"), e("photos/CT/TULIP 8/7.png"), e("photos/CT/TULIP 8/8.png"), e("photos/CT/TULIP 8/9.png"), e("photos/CT/TULIP 8/z7725943006140_aca03eb9abde56941db3c0898f1f5ada.jpg"), e("photos/CT/TULIP 8/z7725943030641_fddbf17b2dea3a02f914ac0fd526bdde.jpg")] },
-  { name: "Công Trình", photos: [e("photos/CT/3/main.jpg"), e("photos/CT/3/131630368_1023080644840198_6605691566556036943_n.jpg"), e("photos/CT/3/131927723_1023080691506860_2396807352572751001_n.jpg"), e("photos/CT/3/132038978_1023080664840196_6908504946235264019_n.jpg")] },
-];
-
-const PROJECT_ROWS = [
-  PROJECTS.slice(0, 5),
-  PROJECTS.slice(5, 9),
-  PROJECTS.slice(9, 13),
-  PROJECTS.slice(13, 17),
-  PROJECTS.slice(17),
-];
-
-function GalleryModal({ project, onClose }: { project: Project; onClose: () => void }) {
-  const [idx, setIdx] = useState(0);
-  const total = project.photos.length;
-  const prev = () => setIdx((i) => (i - 1 + total) % total);
-  const next = () => setIdx((i) => (i + 1) % total);
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  useEffect(() => {
-    const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") onClose();
-      if (ev.key === "ArrowRight") next();
-      if (ev.key === "ArrowLeft") prev();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx]);
-
+function ProjectCard({
+  project,
+  onClick,
+  featured = false,
+}: {
+  project: Project;
+  onClick: () => void;
+  featured?: boolean;
+}) {
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col"
-      style={{ background: "rgba(4,4,4,0.97)", backdropFilter: "blur(12px)" }}
-      onClick={onClose}
+      onClick={onClick}
+      style={{
+        cursor: 'pointer',
+        overflow: 'hidden',
+        background: '#F8F8F6',
+        ...(featured ? { display: 'flex', flexDirection: 'column', height: '100%' } : {}),
+      }}
     >
-      {/* Header */}
       <div
-        className="flex items-center justify-between shrink-0"
-        style={{ padding: "24px 36px" }}
-        onClick={(ev) => ev.stopPropagation()}
+        style={{
+          overflow: 'hidden',
+          position: 'relative',
+          ...(featured ? { flex: 1, minHeight: 0 } : { aspectRatio: '4/3' }),
+        }}
       >
-        <div>
-          <p className="text-white/40 text-[9px] tracking-[0.5em] uppercase mb-1">Dự Án</p>
-          <p className="text-white text-sm font-light tracking-widest uppercase">{project.name}</p>
-        </div>
-        <div className="flex items-center gap-6">
-          <p className="text-white/30 text-[10px] tracking-widest">{idx + 1} / {total}</p>
-          <button
-            onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors duration-200 text-lg"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {/* Main image */}
-      <div
-        className="flex-1 flex items-center justify-center relative min-h-0"
-        onClick={(ev) => ev.stopPropagation()}
-      >
-        <button
-          onClick={prev}
-          className="absolute left-6 z-10 text-white/40 hover:text-white transition-colors duration-200 text-2xl px-4 py-8"
-        >
-          ‹
-        </button>
         <img
-          key={project.photos[idx]}
-          src={project.photos[idx]}
+          src={project.cover}
           alt={project.name}
-          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            transition: 'transform 0.5s ease',
+          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1.04)')
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1)')
+          }
         />
-        <button
-          onClick={next}
-          className="absolute right-6 z-10 text-white/40 hover:text-white transition-colors duration-200 text-2xl px-4 py-8"
-        >
-          ›
-        </button>
       </div>
-
-      {/* Thumbnails */}
       <div
-        className="shrink-0 flex gap-2 overflow-x-auto"
-        style={{ padding: "16px 36px 24px" }}
-        onClick={(ev) => ev.stopPropagation()}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '10px 14px',
+          borderTop: '1px solid rgba(0,0,0,0.07)',
+        }}
       >
-        {project.photos.map((src, i) => (
-          <button
-            key={src}
-            onClick={() => setIdx(i)}
-            style={{
-              flex: "0 0 72px",
-              height: 48,
-              opacity: i === idx ? 1 : 0.35,
-              transition: "opacity 0.2s",
-              overflow: "hidden",
-              border: i === idx ? "1px solid rgba(255,255,255,0.5)" : "1px solid transparent",
-            }}
-          >
-            <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </button>
-        ))}
+        <span
+          style={{
+            fontSize: '0.62rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: '#111',
+          }}
+        >
+          {project.name}
+        </span>
+        {project.year && (
+          <span style={{ fontSize: '0.62rem', color: '#999', flexShrink: 0, marginLeft: 8 }}>
+            [{project.year}]
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-function ExpandingGrid() {
+function PortfolioGrid() {
   const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const top6 = PROJECTS.slice(0, 6);
+
+  useEffect(() => {
+    // Preload all cover images in background so they're cached before the user scrolls
+    PROJECTS.forEach((p) => {
+      const img = new window.Image();
+      img.src = p.cover;
+    });
+  }, []);
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 56px" }}>
-        {PROJECT_ROWS.map((row, ri) => (
-          <div key={ri} style={{ display: "flex", gap: 4, alignItems: "flex-end" }}>
-            {row.map((project) => (
-              <div
-                key={project.name}
-                className="group/photo relative overflow-hidden"
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  transition: "flex 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(ev) => { (ev.currentTarget as HTMLDivElement).style.flex = "3"; }}
-                onMouseLeave={(ev) => { (ev.currentTarget as HTMLDivElement).style.flex = "1"; }}
-                onClick={() => setActiveProject(project)}
-              >
-                <img
-                  src={project.photos[0]}
-                  alt={project.name}
-                  style={{ width: "100%", height: "auto", display: "block", transition: "transform 0.5s ease" }}
-                  className="group-hover/photo:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover/photo:bg-black/25 transition-all duration-400" />
-                <div
-                  className="absolute bottom-0 left-0 right-0 flex items-end justify-between opacity-0 group-hover/photo:opacity-100 transition-opacity duration-300"
-                  style={{ padding: "28px 14px 12px", background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }}
-                >
-                  <p className="text-white text-[9px] tracking-widest uppercase">{project.name}</p>
-                  <p className="text-white/60 text-[9px] tracking-widest uppercase">See More</p>
-                </div>
-              </div>
-            ))}
+      <div style={{ maxWidth: 1400, width: "100%", padding: '0 56px', margin: "0 auto" }}>
+        {/* Top row: featured (2/3) + 2 stacked (1/3) */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr',
+            gap: 4,
+            marginBottom: 4,
+            alignItems: 'stretch',
+          }}
+        >
+          <ProjectCard
+            project={top6[0]}
+            featured
+            onClick={() => setActiveProject(top6[0])}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <ProjectCard project={top6[1]} onClick={() => setActiveProject(top6[1])} />
+            <ProjectCard project={top6[2]} onClick={() => setActiveProject(top6[2])} />
           </div>
-        ))}
+        </div>
+
+        {/* Bottom row: 3 equal */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: 4,
+          }}
+        >
+          {top6.slice(3).map((p) => (
+            <ProjectCard key={p.name} project={p} onClick={() => setActiveProject(p)} />
+          ))}
+        </div>
+
+        {/* See All */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
+          <Link
+            href="/gallery"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: '0.7rem',
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: '#111',
+              textDecoration: 'none',
+              padding: '12px 28px',
+              border: '1px solid rgba(0,0,0,0.15)',
+              transition: 'background 0.2s, border-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = '#111';
+              (e.currentTarget as HTMLAnchorElement).style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
+              (e.currentTarget as HTMLAnchorElement).style.color = '#111';
+            }}
+          >
+            Xem Tất Cả
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
       </div>
-      {activeProject && <GalleryModal project={activeProject} onClose={() => setActiveProject(null)} />}
+
+      {activeProject && (
+        <GalleryModal project={activeProject} onClose={() => setActiveProject(null)} />
+      )}
     </>
   );
 }
 
-function Label({
-  children,
-  left,
-}: {
-  children: React.ReactNode;
-  left?: boolean;
-}) {
-  return (
-    <div className={`flex items-center gap-4 ${left ? "" : "justify-center"}`}>
-      <div
-        style={{ width: 20, height: 1, background: "rgba(255,255,255,0.28)" }}
-      />
-      <span
-        className="text-[10px] tracking-[0.5em] uppercase"
-        style={{ color: "rgba(255,255,255,0.32)" }}
-      >
-        {children}
-      </span>
-      {!left && (
-        <div
-          style={{ width: 20, height: 1, background: "rgba(255,255,255,0.28)" }}
-        />
-      )}
-    </div>
-  );
-}
+
